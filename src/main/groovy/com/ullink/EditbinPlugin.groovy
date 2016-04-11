@@ -32,7 +32,7 @@ class EditbinPlugin implements Plugin<Project> {
     }
     
     File findEditBin(){
-        def programFiles = System.getenv("programfiles(x86)")
+        def programFiles = System.getenv("programfiles(x86)") ?: System.getenv("programfiles")
         ['14.0', '12.0', '11.0', '10.0', '9.0', '8.0']
         .collect { it -> new File("${programFiles}/Microsoft Visual Studio $it/VC/bin/editbin.exe") }
         .find { it -> it.exists() }
