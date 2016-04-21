@@ -7,7 +7,7 @@ import org.gradle.api.GradleException
 class EditbinPlugin implements Plugin<Project> {
     void apply(Project project){
         project.extensions.create("editbin", EditbinPluginExtension)
-        project.task('enable.large.address.aware')<< {
+        project.task('enableLargeAddressAware')<< {
             if (project.editbin.targetFileName == null)
                 throw new GradleException("editbin.targetFileName not set" )
             
