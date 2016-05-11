@@ -1,5 +1,6 @@
 package com.ullink
 
+import org.gradle.api.GradleException
 import org.gradle.testfixtures.ProjectBuilder
 
 import java.nio.file.Files
@@ -10,44 +11,117 @@ import org.junit.Test
 
 class EditbinTaskTest {
     @Test
-    void whenEditbinFolderIsProvided_thenFindEditBinReturnsIt() {
+    void whenFindingInstalledEditbinFolderPath_thenReturnNullWhenExecFileDoesntExistsEvenIfFolderExists() {
         def project = ProjectBuilder.builder().build()
         project.apply plugin: EditbinPlugin
-        def editBinFolder = File.createTempDir();
-
         def task = project.tasks.editbin
-        task.editbinFolder = editBinFolder.path
-        assertEquals(editBinFolder.path, task.findEditBin().path)
 
-        editBinFolder.deleteOnExit()
-    }
-
-    @Test
-    void whenEditBinIsPresentInProgramFiles_thenFindEditBinReturnsThePath() {
-        def project = ProjectBuilder.builder().build()
-        project.apply plugin: EditbinPlugin
         def programFilesFolder = File.createTempDir();
-        def editBinPath = new File(programFilesFolder, 'Microsoft Visual Studio 14.0/VC/bin/editbin.exe');
-        Files.createDirectories(Paths.get(editBinPath.path))
-        editBinPath.createNewFile()
-
-        def task = project.tasks.editbin
+        Files.createDirectories(Paths.get(new File(programFilesFolder, 'Microsoft Visual Studio 14.0/VC/bin/').path))
         task.metaClass.getProgramFiles = { programFilesFolder }
-        assertEquals(editBinPath.path, task.findEditBin().path)
+        assertEquals(null, task.findInstalledEditbinFolderPath())
 
         programFilesFolder.deleteOnExit()
     }
 
     @Test
-    void whenEditbinDoesntExist_thenFindEditBinReturnsNull() {
+    void whenFindingInstalledEditbinFolderPath_thenReturnProperPath() {
         def project = ProjectBuilder.builder().build()
         project.apply plugin: EditbinPlugin
-        def programFilesFolder = File.createTempDir();
-
         def task = project.tasks.editbin
+
+        def programFilesFolder = File.createTempDir();
+        def editBinFolder = new File(programFilesFolder, 'Microsoft Visual Studio 14.0/VC/bin/');
+        Files.createDirectories(Paths.get(editBinFolder.path))
+        new File(editBinFolder, 'editbin.exe').createNewFile()
         task.metaClass.getProgramFiles = { programFilesFolder }
-        assertNull(task.findEditBin())
+        assertEquals(editBinFolder.path, task.findInstalledEditbinFolderPath())
 
         programFilesFolder.deleteOnExit()
+    }
+
+    @Test
+    void doesntRunBatFileByDefaultBecauseUseEnvSetupBatIsFalse(){
+        def project = ProjectBuilder.builder().build()
+        project.apply plugin: EditbinPlugin
+        def task = project.tasks.editbin
+
+        assertEquals(
+                task.getCommandLine('dest.dll'),
+                'editbin.exe /LARGEADDRESSAWARE dest.dll'
+        );
+    }
+
+    @Test
+    void runBatFile_whenUseEnvSetupBatIsTrue(){
+        def project = ProjectBuilder.builder().build()
+        project.apply plugin: EditbinPlugin
+        def task = project.tasks.editbin
+
+        task.useEnvSetupBat = true
+
+        assertEquals(
+                task.getCommandLine('dest.dll'),
+                'vcvars32.bat & editbin.exe /LARGEADDRESSAWARE dest.dll'
+        );
+    }
+
+    @Test
+    void whenEnableLargeAddressAwareIsFalse_thenNoExceptionAreThrown(){
+        def project = ProjectBuilder.builder().build()
+        project.apply plugin: EditbinPlugin
+        def task = project.tasks.editbin
+
+        task.doIt()
+    }
+
+    @Test(expected = GradleException.class)
+    void whenTargetFileNameIsNotProvided_thenAExceptionIsThrown(){
+        def project = ProjectBuilder.builder().build()
+        project.apply plugin: EditbinPlugin
+        def task = project.tasks.editbin
+
+        task.enableLargeAddressAware = true
+
+        task.doIt()
+    }
+
+    @Test(expected = GradleException.class)
+    void whenEditbinFolderIsNotProvidedNeitherInstalled_thenAExceptionIsThrown(){
+        def project = ProjectBuilder.builder().build()
+        project.apply plugin: EditbinPlugin
+        def task = project.tasks.editbin
+
+        task.enableLargeAddressAware = true
+        task.targetFileName = 'my.dll'
+
+        task.doIt()
+    }
+
+    @Test(expected = GradleException.class)
+    void whenEditbinFileDoesntExist_thenAExceptionIsThrown(){
+        def project = ProjectBuilder.builder().build()
+        project.apply plugin: EditbinPlugin
+        def task = project.tasks.editbin
+
+        task.editbinFolder = File.createTempDir()
+        task.enableLargeAddressAware = true
+        task.targetFileName = 'my.dll'
+
+        task.doIt()
+    }
+
+    @Test(expected = GradleException.class)
+    void whenEditbinFileExistsButNotTheBatFileWhenUsingTheBatFile_thenAExceptionIsThrown(){
+        def project = ProjectBuilder.builder().build()
+        project.apply plugin: EditbinPlugin
+        def task = project.tasks.editbin
+
+        task.editbinFolder = File.createTempDir()
+        task.useEnvSetupBat = true
+        task.enableLargeAddressAware = true
+        task.targetFileName = 'my.dll'
+
+        task.doIt()
     }
 }
