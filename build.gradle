@@ -19,7 +19,7 @@ apply plugin: 'com.jfrog.bintray'
 apply plugin: "nu.studer.plugindev"
 
 group = 'com.ullink.gradle'
-version = '1.0'
+version = '1.1'
 description 'Gradle plugin for using editbin.'
 
 bintray {
