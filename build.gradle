@@ -11,13 +11,16 @@ buildscript {
   }
   dependencies {
     classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.6"
+    classpath "nu.studer:gradle-plugindev-plugin:1.0.3"
   }
 }
 
 apply plugin: 'com.jfrog.bintray'
+apply plugin: "nu.studer.plugindev"
 
 group = 'com.ullink.gradle'
-version = '1.0'
+version = '1.1'
+description 'Gradle plugin for using editbin.'
 
 bintray {
     user project.properties.bintrayUser
@@ -30,4 +33,19 @@ bintray {
         vcsUrl = 'https://github.com/ullink/gradle-editbin-plugin.git'
         labels = ['editbin', 'gradle', 'plugin']
     }
+}
+
+plugindev {
+    pluginId 'com.ullink.gradle.editbin'
+    pluginName 'com.ullink.gradle:gradle-editbin-plugin'
+    pluginImplementationClass 'com.ullink.EditbinPlugin'
+    pluginDescription project.description
+    pluginLicenses 'Apache-2.0'
+    pluginTags 'gradle', 'plugin', 'msbuild', 'c#', '.net', 'editbin'
+    authorId 'arus'
+    authorName 'Adrian Rus'
+    authorEmail 'adrian.rus@itiviti.com'
+    projectUrl "https://github.com/Ullink/${project.name}"
+    projectInceptionYear '2016'
+    done()
 }
